@@ -16,14 +16,20 @@ export default function SignaturePad({
 
   useEffect(() => {
     const canvas = canvasRef.current!;
-    const ratio = window.devicePixelRatio || 1;
-    canvas.width = canvas.clientWidth * ratio;
-    canvas.height = canvas.clientHeight * ratio;
-    const ctx = canvas.getContext('2d')!;
-    ctx.scale(ratio, ratio);
-    ctx.lineWidth = 2.5;
-    ctx.lineCap = 'round';
-    ctx.strokeStyle = '#1a1a1a';
+    const setupCanvas = () => {
+      const ratio = window.devicePixelRatio || 1;
+      canvas.width = canvas.clientWidth * ratio;
+      canvas.height = canvas.clientHeight * ratio;
+      const ctx = canvas.getContext('2d')!;
+      ctx.scale(ratio, ratio);
+      ctx.lineWidth = 2.5;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = '#1a1a1a';
+    };
+    setupCanvas();
+    window.addEventListener('resize', setupCanvas);
+    return () => window.removeEventListener('resize', setupCanvas);
   }, []);
 
   const getPos = (e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -32,6 +38,7 @@ export default function SignaturePad({
   };
 
   const start = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    canvasRef.current?.setPointerCapture(e.pointerId);
     drawing.current = true;
     hasDrawn.current = true;
     setIsEmpty(false);
@@ -63,7 +70,6 @@ export default function SignaturePad({
 
   const submit = () => {
     if (isEmpty) return;
-    // Export on a clean white background so the PNG isn't transparent
     const src = canvasRef.current!;
     const out = document.createElement('canvas');
     out.width = src.width;
@@ -77,50 +83,64 @@ export default function SignaturePad({
 
   return (
     <div>
+      <style>{`
+        .sigpad-canvas {
+          width: 100%;
+          height: 260px;
+          border: 2px dashed #ccc;
+          border-radius: 10px;
+          touch-action: none;
+          background: #fff;
+          display: block;
+        }
+        @media (min-width: 480px) {
+          .sigpad-canvas { height: 220px; }
+        }
+        .sigpad-actions {
+          display: flex;
+          gap: 12px;
+          margin-top: 16px;
+        }
+        .sigpad-btn {
+          padding: 14px 18px;
+          font-size: 16px;
+          border-radius: 8px;
+          cursor: pointer;
+          min-height: 48px;
+        }
+        .sigpad-btn.clear {
+          border: 1px solid #ccc;
+          background: #fff;
+          flex: 0 0 auto;
+        }
+        .sigpad-btn.submit {
+          border: none;
+          color: #fff;
+          flex: 1;
+          font-weight: 600;
+        }
+      `}</style>
       <canvas
         ref={canvasRef}
+        className="sigpad-canvas"
         onPointerDown={start}
         onPointerMove={move}
         onPointerUp={end}
         onPointerLeave={end}
-        style={{
-          width: '100%',
-          height: 220,
-          border: '2px dashed #ccc',
-          borderRadius: 8,
-          touchAction: 'none',
-          background: '#fff',
-        }}
+        onPointerCancel={end}
       />
-      <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
-        <button
-          onClick={clear}
-          type="button"
-          style={{
-            padding: '10px 18px',
-            borderRadius: 6,
-            border: '1px solid #ccc',
-            background: '#fff',
-            cursor: 'pointer',
-          }}
-        >
+      <div className="sigpad-actions">
+        <button onClick={clear} type="button" className="sigpad-btn clear">
           Clear
         </button>
         <button
           onClick={submit}
           type="button"
           disabled={isEmpty || saving}
-          style={{
-            padding: '10px 18px',
-            borderRadius: 6,
-            border: 'none',
-            background: isEmpty || saving ? '#999' : '#111',
-            color: '#fff',
-            cursor: isEmpty || saving ? 'not-allowed' : 'pointer',
-            flex: 1,
-          }}
+          className="sigpad-btn submit"
+          style={{ background: isEmpty || saving ? '#999' : '#111', cursor: isEmpty || saving ? 'not-allowed' : 'pointer' }}
         >
-          {saving ? 'Saving…' : 'Submit signature'}
+          {saving ? 'Saving...' : 'Submit signature'}
         </button>
       </div>
     </div>

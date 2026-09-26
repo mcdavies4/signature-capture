@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
@@ -38,44 +38,83 @@ export default function SignPage() {
     if (res.ok) setStatus('signed');
   };
 
-  if (status === 'loading') return <Centered>Loading...</Centered>;
-  if (status === 'invalid') return <Centered>This link isn't valid.</Centered>;
-  if (status === 'signed')
-    return <Centered>Thanks{signerName ? `, ${signerName}` : ''} - your signature has been received.</Centered>;
-
-  return (
-    <div style={{ maxWidth: 480, margin: '60px auto', padding: '0 20px' }}>
-      <h1 style={{ fontSize: 22, marginBottom: 4 }}>Sign here</h1>
-      <p style={{ color: '#555', marginBottom: 16 }}>
-        Enter your name, then draw your signature below.
-      </p>
-      <input
-        placeholder="Your full name"
-        value={nameInput}
-        onChange={(e) => setNameInput(e.target.value)}
-        style={{
-          width: '100%',
-          padding: 10,
-          marginBottom: 20,
-          border: '1px solid #ccc',
-          borderRadius: 6,
-          fontSize: 16,
-          boxSizing: 'border-box',
-        }}
-      />
-      {nameInput.trim() ? (
-        <SignaturePad onSave={handleSave} saving={saving} />
-      ) : (
-        <p style={{ color: '#999', fontSize: 14 }}>Enter your name to unlock the signature pad.</p>
-      )}
-    </div>
+  const styleTag = (
+    <style>{`
+      * { box-sizing: border-box; }
+      body { margin: 0; }
+      .sign-wrap {
+        max-width: 480px;
+        margin: 0 auto;
+        padding: 32px 16px 48px;
+        font-family: system-ui, -apple-system, sans-serif;
+      }
+      .sign-wrap h1 { font-size: 20px; margin: 0 0 6px; }
+      .sign-wrap .hint { color: #555; font-size: 14px; margin: 0 0 20px; }
+      .name-input {
+        width: 100%;
+        padding: 14px;
+        margin-bottom: 20px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        font-size: 16px;
+      }
+      .locked-hint { color: #999; font-size: 14px; }
+      .centered {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 70vh;
+        text-align: center;
+        padding: 24px;
+        font-size: 18px;
+        font-family: system-ui, -apple-system, sans-serif;
+      }
+    `}</style>
   );
-}
 
-function Centered({ children }: { children: React.ReactNode }) {
+  if (status === 'loading')
+    return (
+      <>
+        {styleTag}
+        <div className="centered">Loading...</div>
+      </>
+    );
+  if (status === 'invalid')
+    return (
+      <>
+        {styleTag}
+        <div className="centered">This link isn't valid.</div>
+      </>
+    );
+  if (status === 'signed')
+    return (
+      <>
+        {styleTag}
+        <div className="centered">
+          Thanks{signerName ? `, ${signerName}` : ''} - your signature has been received.
+        </div>
+      </>
+    );
+
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh', fontSize: 18 }}>
-      {children}
-    </div>
+    <>
+      {styleTag}
+      <div className="sign-wrap">
+        <h1>Sign here</h1>
+        <p className="hint">Enter your name, then draw your signature below.</p>
+        <input
+          className="name-input"
+          placeholder="Your full name"
+          value={nameInput}
+          onChange={(e) => setNameInput(e.target.value)}
+          autoFocus
+        />
+        {nameInput.trim() ? (
+          <SignaturePad onSave={handleSave} saving={saving} />
+        ) : (
+          <p className="locked-hint">Enter your name to unlock the signature pad.</p>
+        )}
+      </div>
+    </>
   );
 }
